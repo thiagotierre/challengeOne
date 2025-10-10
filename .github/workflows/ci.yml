@@ -2,9 +2,9 @@ name: CI - Spring Boot Build, Test, Push & Deploy with Terraform
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "feat/ci-cd" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "feat/ci-cd" ]
   workflow_dispatch:
 
 jobs:
