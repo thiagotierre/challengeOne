@@ -77,3 +77,4 @@ jobs:
       - name: Terraform Apply
         working-directory: ${{ env.TERRAFORM_DIR }}
         run: terraform apply -auto-approve
+      #End of Job
