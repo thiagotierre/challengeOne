@@ -1,7 +1,7 @@
 FROM maven:3-amazoncorretto-21 AS maven
 WORKDIR /usr/src/app
 COPY . .
-RUN mvn package -DskipTests
+RUN mvn package
 
 FROM openjdk:21-oracle
 WORKDIR /usr/src/app
