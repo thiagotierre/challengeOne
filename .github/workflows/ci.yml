@@ -47,7 +47,11 @@ jobs:
       - name: Reset Docker config
         run: |
           mkdir -p ~/.docker
-          echo '{}' > ~/.docker/config.json
+          cat > ~/.docker/config.json <<EOF
+          {
+            "credHelpers": {}
+          }
+          EOF
 
       # 4️⃣ Login no Docker Hub
       - name: Login to Docker Hub
