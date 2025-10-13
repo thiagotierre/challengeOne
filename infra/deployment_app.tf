@@ -27,7 +27,7 @@ resource "kubernetes_deployment" "challengeone_app" {
       spec {
         container {
           name              = "challengeone"
-          image             = "luigigb/challengeone-image:1.0"
+          image             = "thiagotierre/challengeone:1"
           image_pull_policy = "Always"
 
           port {
