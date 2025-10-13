@@ -82,7 +82,7 @@ public class CreateWorkOrderUseCaseImpl implements CreateWorkOrderUseCase {
         workOrder.recalculateTotal();
         workOrder.reserveParts();
         partGateway.saveAll(parts);
-        return workOrderGateway.create(workOrder);
+        return workOrderGateway.save(workOrder);
     }
 
     private List<WorkOrderPart> populateParts(List<Part> parts, Map<UUID, WorkOrderPart> workOrderPartMap, WorkOrder workOrder) {

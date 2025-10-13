@@ -9,6 +9,6 @@ public record CreateWorkOrderRequest(
         UUID createdById,
         List<WorkOrderPartRequest> parts,
         List<WorkOrderServiceRequest> services
-        ){
+) {
 
 }

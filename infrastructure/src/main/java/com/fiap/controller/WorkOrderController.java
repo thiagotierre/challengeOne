@@ -1,14 +1,13 @@
 package com.fiap.controller;
 
+import com.fiap.core.domain.workorder.WorkOrder;
 import com.fiap.core.exception.BadRequestException;
 import com.fiap.core.exception.BusinessRuleException;
 import com.fiap.core.exception.NotFoundException;
-import com.fiap.dto.workorder.CreateWorkOrderRequest;
-import com.fiap.dto.workorder.WorkOrderAssignMechanicRequest;
-import com.fiap.dto.workorder.UpdateStatusWorkOrderRequest;
-import com.fiap.dto.workorder.WorkOrderResponse;
-import com.fiap.dto.workorder.WorkOrderStatusResponse;
+import com.fiap.dto.workorder.*;
+import com.fiap.mapper.workorder.WorkOrderHistoryMapper;
 import com.fiap.mapper.workorder.WorkOrderMapper;
+import com.fiap.dto.workorder.GetWorkOrderHistoryResponse;
 import com.fiap.usecase.workorder.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -17,7 +16,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("v1/work-orders")
@@ -31,8 +32,14 @@ public class WorkOrderController {
     private final GetWorkOrderStatusUseCase getWorkOrderStatusUseCase;
     private final ApproveWorkOrderUseCase approveWorkOrderUseCase;
     private final RefuseWorkOrderUseCase refuseWorkOrderUseCase;
+    private final AddItemsWorkOrderUseCase addItemsWorkOrderUseCase;
+    private final CalculateAverageTimeWorkOrderUseCase calculateAverageTimeWorkOrderUseCase;
+    private final ListWorkOrdersByStatusUseCase listWorkOrdersByStatusUseCase;
+    private final GetWorkOrderHistoryUseCase getWorkOrderHistoryUseCase;
+    private final WorkOrderHistoryMapper workOrderHistoryMapper;
 
-    public WorkOrderController(CreateWorkOrderUseCase createWorkOrderUseCase, FindWorkOrderByIdUseCase findWorkOrderByIdUseCase, AssignedMechanicUseCase assignedMechanicUseCase, WorkOrderMapper workOrderMapper, UpdateStatusWorkOrderUseCase updateStatusWorkOrderUseCase, GetWorkOrderStatusUseCase getWorkOrderStatusUseCase, ApproveWorkOrderUseCase approveWorkOrderUseCase, RefuseWorkOrderUseCase refuseWorkOrderUseCase) {
+    public WorkOrderController(CreateWorkOrderUseCase createWorkOrderUseCase, FindWorkOrderByIdUseCase findWorkOrderByIdUseCase, AssignedMechanicUseCase assignedMechanicUseCase, WorkOrderMapper workOrderMapper, UpdateStatusWorkOrderUseCase updateStatusWorkOrderUseCase, GetWorkOrderStatusUseCase getWorkOrderStatusUseCase, ApproveWorkOrderUseCase approveWorkOrderUseCase, RefuseWorkOrderUseCase refuseWorkOrderUseCase, AddItemsWorkOrderUseCase addItemsWorkOrderUseCase, CalculateAverageTimeWorkOrderUseCase calculateAverageTimeWorkOrderUseCase, ListWorkOrdersByStatusUseCase listWorkOrdersByStatusUseCase, GetWorkOrderHistoryUseCase getWorkOrderHistoryUseCase,
+                               WorkOrderHistoryMapper workOrderHistoryMapper) {
         this.createWorkOrderUseCase = createWorkOrderUseCase;
         this.findWorkOrderByIdUseCase = findWorkOrderByIdUseCase;
         this.assignedMechanicUseCase = assignedMechanicUseCase;
@@ -41,6 +48,11 @@ public class WorkOrderController {
         this.getWorkOrderStatusUseCase = getWorkOrderStatusUseCase;
         this.approveWorkOrderUseCase = approveWorkOrderUseCase;
         this.refuseWorkOrderUseCase = refuseWorkOrderUseCase;
+        this.addItemsWorkOrderUseCase = addItemsWorkOrderUseCase;
+        this.calculateAverageTimeWorkOrderUseCase = calculateAverageTimeWorkOrderUseCase;
+        this.listWorkOrdersByStatusUseCase = listWorkOrdersByStatusUseCase;
+        this.getWorkOrderHistoryUseCase = getWorkOrderHistoryUseCase;
+        this.workOrderHistoryMapper = workOrderHistoryMapper;
     }
 
     @Operation(
@@ -65,25 +77,17 @@ public class WorkOrderController {
         return ResponseEntity.ok().body(workOrderMapper.toResponse(workOrder));
     }
 
-    /*@Operation(
+    @Operation(
             summary = "Retorna Lista de Ordem de Serviço",
-            description = "Endpoint para retornar OS, podendo filtrar pelo status")
+            description = "Endpoint para retornar OS, ordenadas por status")
     @ApiResponses(
             value = { @ApiResponse(responseCode = "200", description = "Ordens de Serviço retornadas com sucesso.") })
     @GetMapping("/list")
-    public ResponseEntity<ResponseApi<List<WorkOrderResumeDTO>>> getWorkOrders(
-            @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "DESC") String sortDirection
-    ) {
-        WorkOrderFilterDTO filter = new WorkOrderFilterDTO();
+    public ResponseEntity<List<WorkOrderResponse>> getWorkOrders() {
+        List<WorkOrder> workOrders = listWorkOrdersByStatusUseCase.execute();
 
-        if (status != null) filter.setStatus(WorkOrderStatus.fromString(status));
-
-        ResponseApi<List<WorkOrderResumeDTO>> responseApi = findWorkOrdersByFilterUseCase.execute(filter);
-
-        return ResponseEntity.status(responseApi.getStatus()).body(responseApi);
-    }*/
+        return ResponseEntity.ok().body(workOrders.stream().map(workOrderMapper::toResponse).collect(Collectors.toList()));
+    }
 
     @Operation(
             summary = "Vincula um mecânico a uma ordem de serviço",
@@ -109,7 +113,7 @@ public class WorkOrderController {
     public ResponseEntity<WorkOrderResponse> updateStatus(
             @PathVariable UUID id,
             @RequestBody UpdateStatusWorkOrderRequest request
-    ) throws NotFoundException, BadRequestException {
+    ) throws NotFoundException, BadRequestException, BusinessRuleException {
         var workOrder = updateStatusWorkOrderUseCase.execute(id, request.status());
         return ResponseEntity.ok(workOrderMapper.toResponse(workOrder));
     }
@@ -147,71 +151,40 @@ public class WorkOrderController {
         return ResponseEntity.ok("Ordem de Serviço recusada.");
     }
 
-    /*@PatchMapping("/{id}/delivered")
     @Operation(
-            summary = "Marca uma ordem de serviço como entregue",
-            description = "Endpoint para marcar uma ordem de serviço como entregue pelo ID")
-    @ApiResponses(
-            value = { @ApiResponse(responseCode = "200", description = "Ordem de serviço marcada como entregue com sucesso.") })
-    public ResponseEntity<ResponseApi<StatusWorkOrderRespondeDTO>> markAsDelivered(@PathVariable UUID id) {
-        ResponseApi<StatusWorkOrderRespondeDTO> responseApi = updateStatusWorkOrderUseCase.execute(id, "DELIVERED");
-        return ResponseEntity.status(responseApi.getStatus()).body(responseApi);
-    }*/
-
-
-    /*@Operation(
-            summary = "Finaliza uma ordem de serviço",
-            description = "Endpoint para finalizar uma ordem de serviço pelo ID")
-    @ApiResponses(
-            value = { @ApiResponse(responseCode = "200", description = "Ordem de serviço finalizada com sucesso.") })
-    @PatchMapping("/{id}/finalize")
-    public ResponseEntity<ResponseApi<Void>> finalizeWorkOrder(@PathVariable UUID id) {
-        ResponseApi<Void> responseApi = finalizeWorkOrderUseCase.execute(id);
-        return ResponseEntity.status(responseApi.getStatus()).body(responseApi);
-    }*/
-
-    /*@Operation(
             summary = "Adiciona novos itens para a Ordem de Serviço",
             description = "Endpoint para adicionar novas peças/insumos para a ordem de serviço")
     @ApiResponses(
             value = { @ApiResponse(responseCode = "200", description = "Itens adicionados com sucesso.") })
     @PatchMapping("/{id}/update-items")
-    public ResponseEntity<ResponseApi<WorkOrderResumeDTO>> updateItems(@PathVariable UUID id, @RequestBody WorkOrderItemDTO workOrderItemDTO) {
-        ResponseApi<WorkOrderResumeDTO> responseApi = updateWorkOrderItemsUseCase.execute(id, workOrderItemDTO);
-        return ResponseEntity.status(responseApi.getStatus()).body(responseApi);
-    }*/
+    public ResponseEntity<WorkOrderResponse> updateItems(@PathVariable UUID id, @RequestBody UpdateWorkOrderItemsRequest updateWorkOrderItemsRequest) throws BadRequestException, BusinessRuleException, NotFoundException {
+        var workOrder = addItemsWorkOrderUseCase.execute(id, workOrderMapper.toDomain(updateWorkOrderItemsRequest));
+        return ResponseEntity.status(HttpStatus.OK).body(workOrderMapper.toResponse(workOrder));
+    }
 
-    /*@Operation(
-            summary = "Busca o histórico de ordens de serviço por CPF",
-            description = "Endpoint para buscar o histórico de ordens de serviço pelo CPF do cliente")
-    @ApiResponses(
-            value = { @ApiResponse(responseCode = "200", description = "Histórico de ordens de serviço encontrado com sucesso.") })
-    @GetMapping("/cpf/{cpf}/latest-work-order-history")
-    public ResponseEntity<ResponseApi<List<WorkOrderWithHistoryResponseDTO>>> getHistoryByCpf(@PathVariable String cpf) {
-        ResponseApi<List<WorkOrderWithHistoryResponseDTO>> responseApi = getWorkOrderHistoryByCpfUseCase.execute(cpf);
-        return ResponseEntity.status(responseApi.getStatus()).body(responseApi);
-    }*/
+    @Operation(
+            summary = "Busca o histórico de ordens de serviço por CPF/CNPJ",
+            description = "Retorna a linha do tempo de status de todas as OS do cliente (ordenado por data)."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Histórico obtido com sucesso.")
+    })
+    @GetMapping("/history/by-cpf/{cpfCnpj}")
+    public ResponseEntity<List<GetWorkOrderHistoryResponse>> getHistoryByCpf(@PathVariable String cpfCnpj) throws NotFoundException {
+        var histories = getWorkOrderHistoryUseCase.execute(cpfCnpj);
+        return ResponseEntity.ok(workOrderHistoryMapper.toResponse(histories));
+    }
 
-    /*@Operation(
+
+    @Operation(
             summary = "Calcula o tempo médio de conclusão das ordens de serviço",
             description = "Endpoint para calcular o tempo médio de conclusão das ordens de serviço")
     @ApiResponses(
             value = { @ApiResponse(responseCode = "200", description = "Tempo médio calculado com sucesso.") })
-    @GetMapping("/calculate-avarage-time")
-    public ResponseEntity<String> calculateAvarageTime() {
-        ResponseApi<List<WorkOrderAvarageTime>> responseApi = findAvarageTimeWorkOrderUseCase.executeList();
-        HttpStatus status = HttpStatus.valueOf(responseApi.getStatus().name());
-        if (responseApi.getStatus().is4xxClientError()) return ResponseEntity.status(status).body(responseApi.getMessage());
-        List<WorkOrderAvarageTime> allAvarageTimes  = responseApi.getData();
-        Duration avarageTimeMessage = allAvarageTimes.stream()
-                .map(WorkOrderAvarageTime::avarageTime)
-                .reduce(Duration.ZERO, Duration::plus)
-                .dividedBy(allAvarageTimes.size());
+    @GetMapping("/calculate-average-time")
+    public ResponseEntity<String> calculateAverageTime() {
+        String average = calculateAverageTimeWorkOrderUseCase.execute();
+        return ResponseEntity.ok(average);
 
-        return ResponseEntity.ok(
-                String.format("%02d:%02d",
-                        avarageTimeMessage.toHoursPart(),
-                        avarageTimeMessage.toMinutesPart())
-        );
-    }*/
+    }
 }
