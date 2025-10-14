@@ -83,6 +83,15 @@ jobs:
         with:
           terraform_version: 1.9.7
 
+      - name: Importar PVC pgdata (caso já exista)
+        run: |
+          if kubectl get pvc pgdata -n challengeone >/dev/null 2>&1; then
+            echo "✅ PVC 'pgdata' já existe — importando para o Terraform..."
+            terraform import -no-color kubernetes_persistent_volume_claim.pgdata challengeone/pgdata-pvc || true
+          else
+            echo "⚠️ PVC 'pgdata' não encontrado — será criado pelo Terraform."
+          fi
+
       - name: Terraform Init
         working-directory: ${{ env.TERRAFORM_DIR }}
         run: terraform init
