@@ -14,7 +14,7 @@ jobs:
 
     env:
       IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/challengeone
-      IMAGE_TAG: 1.0
+      IMAGE_TAG: 1
 
     steps:
       # 1️⃣ Checkout do código fonte
