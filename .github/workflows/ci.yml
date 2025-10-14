@@ -52,16 +52,10 @@ jobs:
       TERRAFORM_DIR: infra/
 
     steps:
-      # 🔄 Reset Docker config para evitar erro com 'docker-credential-pass'
-      - name: Prepare Docker config
+      - name: Reset Docker credential store
         run: |
           mkdir -p ~/.docker
-          cat > ~/.docker/config.json <<EOF
-          {
-            "credHelpers": { }
-          }
-          EOF
-
+          echo '{}' > ~/.docker/config.json
 
       # 4️⃣ Login no Docker Hub
       - name: Login to Docker Hub
