@@ -8,14 +8,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-push:
-    name: Build, Test, Push Image & Deploy Infra
+  build-and-test:
+    name: Build and Test Project
     runs-on: self-hosted
 
     env:
       IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/challengeone
       IMAGE_TAG: 1.0
-      TERRAFORM_DIR: infra/
 
     steps:
       # 1️⃣ Checkout do código fonte
@@ -39,12 +38,15 @@ jobs:
           restore-keys: |
             maven-
 
-      # 3️⃣ Build e testes do projeto
+      # 4️⃣ Build e testes do projeto
       - name: Build and Test with Maven
         run: mvn -B clean package
-  push:
+
+
+  push-and-deploy:
     name: Push Image & Deploy Infra
     runs-on: self-hosted
+    needs: build-and-test  # ✅ Só executa após o primeiro job terminar com sucesso
 
     env:
       IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/challengeone
@@ -52,12 +54,13 @@ jobs:
       TERRAFORM_DIR: infra/
 
     steps:
+      # 1️⃣ Reset do credential store do Docker
       - name: Reset Docker credential store
         run: |
           mkdir -p ~/.docker
           echo '{}' > ~/.docker/config.json
 
-      # 4️⃣ Login no Docker Hub
+      # 2️⃣ Login no Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -66,7 +69,7 @@ jobs:
         env:
           DOCKER_CONFIG: ~/.docker
 
-      # 5️⃣ Build e push da imagem Docker
+      # 3️⃣ Build e push da imagem Docker
       - name: Build and Push Docker Image
         run: |
           docker build -t $IMAGE_NAME:$IMAGE_TAG .
@@ -74,7 +77,7 @@ jobs:
           docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_NAME:latest
           docker push $IMAGE_NAME:latest
 
-      # 6️⃣ Provisionamento de Infra com Terraform
+      # 4️⃣ Provisionamento de Infra com Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
