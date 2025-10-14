@@ -42,7 +42,16 @@ jobs:
       # 3️⃣ Build e testes do projeto
       - name: Build and Test with Maven
         run: mvn -B clean package
+  push:
+    name: Push Image & Deploy Infra
+    runs-on: self-hosted
 
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/challengeone
+      IMAGE_TAG: 1.0
+      TERRAFORM_DIR: infra/
+
+    steps:
       # 🔄 Reset Docker config para evitar erro com 'docker-credential-pass'
       - name: Prepare Docker config
         run: |
@@ -52,7 +61,7 @@ jobs:
             "credHelpers": { }
           }
           EOF
-          
+
 
       # 4️⃣ Login no Docker Hub
       - name: Login to Docker Hub
@@ -84,4 +93,3 @@ jobs:
       - name: Terraform Apply
         working-directory: ${{ env.TERRAFORM_DIR }}
         run: terraform apply -auto-approve
-      #End of Job
