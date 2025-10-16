@@ -20,6 +20,9 @@ resource "kubernetes_service" "challengeone_db" {
 
 # svc do app
 resource "kubernetes_service" "challengeone_app" {
+  depends_on = [
+    kubernetes_deployment.challengeone_app
+  ]
   metadata {
     name      = "challengeone-service"
     namespace = kubernetes_namespace.challengeone.metadata[0].name
