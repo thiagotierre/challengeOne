@@ -25,6 +25,7 @@ resource "kubernetes_deployment" "challengeone_app" {
       }
 
       spec {
+        termination_grace_period_seconds = 30
         container {
           name              = "challengeone"
           image             = "thiagotierre/challengeone:1"
@@ -40,27 +41,27 @@ resource "kubernetes_deployment" "challengeone_app" {
             }
           }
 
-          liveness_probe {
-            http_get {
-              path = "/api/actuator/health/liveness"
-              port = 8080
-            }
-            initial_delay_seconds = 10
-            period_seconds        = 10
-            timeout_seconds       = 2
-            failure_threshold     = 3
-          }
-
-          readiness_probe {
-            http_get {
-              path = "/api/actuator/health/readiness"
-              port = 8080
-            }
-            initial_delay_seconds = 5
-            period_seconds        = 5
-            timeout_seconds       = 2
-            failure_threshold     = 3
-          }
+          # liveness_probe {
+          #   http_get {
+          #     path = "/api/actuator/health/liveness"
+          #     port = 8080
+          #   }
+          #   initial_delay_seconds = 10
+          #   period_seconds        = 10
+          #   timeout_seconds       = 2
+          #   failure_threshold     = 3
+          # }
+          #
+          # readiness_probe {
+          #   http_get {
+          #     path = "/api/actuator/health/readiness"
+          #     port = 8080
+          #   }
+          #   initial_delay_seconds = 5
+          #   period_seconds        = 5
+          #   timeout_seconds       = 2
+          #   failure_threshold     = 3
+          # }
           
           resources {
             requests = {
